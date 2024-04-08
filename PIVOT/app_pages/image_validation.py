@@ -13,6 +13,10 @@ import pandas as pd
 from utils import app_utils
 from utils import sql_utils
 
+import logging
+
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+
 def update_counter(increment, user_label):
     """
     Updates the counter for which image the user is annotating.
@@ -37,8 +41,10 @@ def update_counter(increment, user_label):
 
     if increment:
         st.session_state.counter += 1
+        logging.info("Next button clicked")
     else:
         st.session_state.counter -= 1
+        logging.info("Back button clicked")
 
 def submit_labels(user_label):
     """
@@ -58,6 +64,7 @@ def submit_labels(user_label):
         st.session_state.new_df = st.session_state.new_df.drop(st.session_state.counter)
     if len(st.session_state.new_df) == 0:
         st.toast("No labels to submit")
+    logging.info("Submit button clicked")
 
 def get_user_experience(num_labels, domain):
 
@@ -135,6 +142,7 @@ def display_label_info(label_df, count):
         - exp_level (int): The level of experience ranging from 1 to 5.
     """
     label_image = app_utils.get_image(label_df.iloc[count]['BLOB_FILEPATH'])
+    logging.info('image displayed')
     
     label_pred = label_df.iloc[count]['PRED_LABEL']
     label_id = label_df.iloc[count]['IMAGE_ID']
@@ -230,7 +238,7 @@ def main():
                         state.user_account = app_utils.get_user(user_email)
                         st.rerun()
 
-                # Display User information if they exists in Database
+                # Display User information if they exist in Database
                 elif state.user_account is not None:
                     # with st.expander("User Information"):
                     # st.markdown(f"{str(state.user_account['name'])}")
@@ -245,6 +253,7 @@ def main():
                         st.markdown(f"**Lab:** {str(state.user_account['lab'])}")
                     with info_cols[2]:
                         st.markdown(f"**Email:** {str(state.user_account['email'])}")
+                    logging.info("User information displayed")
 
         st.divider()
 
@@ -358,6 +367,7 @@ def main():
                                                     batch_size=state.session_number,
                                                     random_ratio=state.session_purpose)
                 # st.toast("Retrieved Images!")
+                logging.info("Retrieved images")
 
     st.divider()
 
@@ -400,6 +410,8 @@ def main():
                 user_add = st.checkbox(label='Confirm label',
                                     key=widget_checkbox,
                                     value=is_checked)
+                if is_checked is True:
+                    logging.info('Checkbox is selected')
 
                 if user_add and not state.user_account:
                     st.error("Please submit your user information!")
@@ -425,11 +437,11 @@ def main():
 
                 with back_col:
                     st.form_submit_button("Back", disabled=back_disabled, on_click=update_counter,
-                                            args=(False,user_label,),
+                                            args=(False,user_label),
                                             help=back_tip, use_container_width=True)
                 with next_col:
                     st.form_submit_button("Next", disabled=next_disabled, on_click=update_counter,
-                                            args=(True,user_label,),
+                                            args=(True,user_label),
                                             help=next_tip,use_container_width=True)
 
                 submit_disabled = state.user_account is None
@@ -441,7 +453,7 @@ def main():
 
                 submitted = st.form_submit_button("Submit",type='primary', use_container_width=True,
                                                     disabled=submit_disabled, help=submit_tip,
-                                                    on_click=submit_labels, args=(user_label,))
+                                                    on_click=submit_labels, args=(user_label))
 
                 if submitted and state.user_account:
                     if len(state.new_df) > 0:
