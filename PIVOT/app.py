@@ -112,12 +112,13 @@ with st.sidebar:
                        "Dictyo",
                        "Dinoflagellate",
                        "Eugleno",
-                       "Unidentifiable",
+                       "Null",
                        "Prymnesio",
                        "Other"]
 
     # Display example images based on user selected phytoplankton
     example_image = st.selectbox(options=example_options,
+                                placeholder="Plankton type",
                                 label_visibility ='collapsed',
                                 label='examples',
                                 index=None)
