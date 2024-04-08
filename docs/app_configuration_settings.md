@@ -8,7 +8,7 @@ This application was setup and developed with an Azure SQL database in mind. For
 
 ## SQL Database
 
-Once you have your database resource setup, you can create the SQL database structure for the application. Run the queries found in [create_db.sql](../PIVOT/create_db.sql) to create the necessary tables for the application. Once the tables are in place, you can begin data ingestion. A template for how to do this is found in [PIVOT/notebooks/Initial_Data_Ingestion.ipynb](../notebooks/Initial_Data_Ingestion.ipynb).
+Once you have your database resource setup, you can create the SQL database structure for the application. Run the queries found in [create_db.sql](../PIVOT/create_db.sql) to create the necessary tables for the application. Once the tables are in place, you can begin data ingestion. A template for how to do this is found in [PIVOT/notebooks/Initial_Data_Ingestion.ipynb](../notebooks/Initial_Data_Ingestion.ipynb). The next step is to generate all the stored procedures needed to run the app. Run all of the files in [stored_procedures](../PIVOT/utils/stored_procedures). 
 
 ## Azure ML Model
 
