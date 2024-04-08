@@ -151,7 +151,7 @@ def get_predictions(df, m_id):
           'Eugleno',
           'Other',
           'Prymnesio',
-          'Unidentifiable']
+          'Null']
 
     preds['class_prob'] = preds.probs.apply(lambda x: x[pd.Series(x).idxmax()])
     preds['predlabel'] = preds.probs.apply(lambda x: classes[pd.Series(x).idxmax()])
