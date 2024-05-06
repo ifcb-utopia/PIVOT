@@ -15,7 +15,7 @@ from utils import sql_utils
 
 import logging
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
 def update_counter(increment, user_label):
     """
@@ -25,26 +25,35 @@ def update_counter(increment, user_label):
         - increment (bool): Indicates if the counter should increment (True) or decrement (False)
         - user_label (str): The label the user is giving to the image.
     """
-    try:
-        is_checked = st.session_state['plankton_check_' + str(st.session_state.counter)]
-        if is_checked:
-            st.session_state.new_df.loc[st.session_state.counter] = [
-                                        st.session_state.label_df.iloc[st.session_state.counter]['IMAGE_ID'],
-                                        st.session_state.user_account['u_id'],
-                                        st.session_state.user_account['experience'],
-                                        user_label]
-
-        elif not is_checked and st.session_state.counter in st.session_state.new_df.index:
-            st.session_state.new_df = st.session_state.new_df.drop(st.session_state.counter)
-    except KeyError:
-        st.exception("Clicking next too clickly")
-
-    if increment:
-        st.session_state.counter += 1
-        logging.info("Next button clicked")
+    logging.info("Next or back button clicked, updating counter with update_counter()")
+    if increment and (st.session_state.counter == st.session_state.session_number - 1):
+        pass
+    elif not increment and (st.session_state.counter == 0):
+        pass
     else:
-        st.session_state.counter -= 1
-        logging.info("Back button clicked")
+        try:
+            is_checked = st.session_state['plankton_check_' + str(st.session_state.counter)]
+            if is_checked:
+                st.session_state.new_df.loc[st.session_state.counter] = [
+                                            st.session_state.label_df.iloc[st.session_state.counter]['IMAGE_ID'],
+                                            st.session_state.user_account['u_id'],
+                                            st.session_state.user_account['experience'],
+                                            user_label]
+                logging.info("New dataframe created to store user experience information")
+
+            elif not is_checked and st.session_state.counter in st.session_state.new_df.index:
+                st.session_state.new_df = st.session_state.new_df.drop(st.session_state.counter)
+                logging.info("Information was not verified, moving on")
+        except KeyError:
+            st.exception("Clicking next too clickly")
+
+        if increment:
+            st.session_state.counter += 1
+            logging.info("Next button clicked, increasing counter")
+        else:
+            st.session_state.counter -= 1
+            logging.info("Back button clicked, decreasing counter")
+    logging.info("End of update_counter()")
 
 def submit_labels(user_label):
     """
@@ -53,6 +62,7 @@ def submit_labels(user_label):
     Args:
         - user_label (str): The label the user is giving to the image.
     """
+    logging.info("Submit button clicked, enacting submit_labels()")
     is_checked = st.session_state['plankton_check_' + str(st.session_state.counter)]
     if is_checked:
         st.session_state.new_df.loc[st.session_state.counter] = [
@@ -60,11 +70,13 @@ def submit_labels(user_label):
             st.session_state.user_account['u_id'],
             st.session_state.user_account['experience'],
             user_label]
+        logging.info("New dataframe created to store user, image, and label information after submit button was clicked")
     elif not is_checked and st.session_state.counter in st.session_state.new_df.index:
         st.session_state.new_df = st.session_state.new_df.drop(st.session_state.counter)
     if len(st.session_state.new_df) == 0:
         st.toast("No labels to submit")
-    logging.info("Submit button clicked")
+        logging.info("No labels to submit")
+    logging.info("End of submit_labels()")
 
 def get_user_experience(num_labels, domain):
 
@@ -79,6 +91,7 @@ def get_user_experience(num_labels, domain):
     Returns:
         - exp_level (int): The level of experience ranging from 1 to 5.
     """
+    logging.info("Getting user experience with get_user_experience()")
     exp_level = 1
 
     if domain == "No" and num_labels == "None":
@@ -102,6 +115,7 @@ def get_user_experience(num_labels, domain):
     elif domain == "Yes" and num_labels == "1000+":
         exp_level = 5
 
+    logging.info(f"Experience level is {exp_level}, end of get_user_experience()")
     return exp_level
 
 def get_label_prob_options(label_df, count):
@@ -116,6 +130,7 @@ def get_label_prob_options(label_df, count):
     Returns:
         - exp_level (int): The level of experience ranging from 1 to 5.
     """
+    logging.info("Sorting probabilities with get_label_prob_options()")
     # Convert dictionary of probabilities to a DataFrame
     label_probs = label_df.iloc[count]['PROBS']
     label_probs = pd.DataFrame.from_dict(label_probs, orient='index')
@@ -127,6 +142,8 @@ def get_label_prob_options(label_df, count):
     # Sort in descending order and convert into final list
     label_probs = label_probs.sort_values(by='PROBS', ascending=False)
     label_probs_options = label_probs.index.values.tolist()
+
+    logging.info("Probabilities sorted and stored as a list. End of get_label_prob_options()")
 
     return label_probs_options
 
@@ -141,14 +158,17 @@ def display_label_info(label_df, count):
     Returns:
         - exp_level (int): The level of experience ranging from 1 to 5.
     """
+    logging.info("Displaying image and label information with display_label_info()")
     label_image = app_utils.get_image(label_df.iloc[count]['BLOB_FILEPATH'])
-    logging.info('image displayed')
+    logging.info('Image retrieved from blob')
     
     label_pred = label_df.iloc[count]['PRED_LABEL']
     label_id = label_df.iloc[count]['IMAGE_ID']
+    logging.info("Predicted label and image id retrieved")
     im_col,_ = st.columns([1,3])
     with im_col:
         st.image(label_image,use_column_width='always')
+        logging.info("Image displayed")
 
     # st.write('ML Generated Label: ', label_pred)
     # st.metric('ML Generated Label:', str(label_pred))
@@ -157,18 +177,23 @@ def display_label_info(label_df, count):
     # st.write('Image ID: ', label_id)
     # st.metric('Image ID:', str(label_id))
     st.caption('Prediction: ' + str(label_pred), help='Image ID: '+ str(label_id))
+    logging.info("Predicted label and image ID displayed")
+    logging.info("End of display_label_info()")
 
 def header():
     """
     Executes the Streamlit formatted HTML banner for the page.
     """
+    logging.info("Running header()")
     st.markdown("""
             <h1 style='text-align: center; color: white; background-image: url(https://img.freepik.com/premium-photo/cute-colorful-abstract-background_480962-11756.jpg);
             padding-top: 70px''>
             Phytoplankton Image Validation Optimization Toolkit<br><br></h1>""",
             unsafe_allow_html=True)
+    logging.info("'Phytoplankton Image Validation Optimization Toolkit' displayed")
 
     st.markdown("""<h1></h1>""", unsafe_allow_html=True)
+    logging.info("End of header()")
 
 def main():
     """
@@ -177,16 +202,19 @@ def main():
     forms link to the SQL Database using functions from both sql_utils and app_utils from
     the utils folder.
     """
+    logging.info("Running main()")
     state = st.session_state
+    logging.info(f"State: {state}")
     with st.expander("Session Details", expanded=True):
         st.markdown("""<h3 style='text-align: left; color: black;'>
                 User Information</h3>""",
                 unsafe_allow_html=True)
+        logging.info("Session details expander has been expanded")
 
         # Session State
         if 'counter' not in state:
             state.counter = 0
-
+        logging.info(f"State counter: {state.counter}")
 
         # Retrieves users information if their email exists in the SQL Database,
         # or will prompt user to enter information if it does not
@@ -195,6 +223,7 @@ def main():
         user_col = st.columns([2,1])
         with user_col[0]:
             user_email = st.text_input(label = "Please enter your email:")
+            logging.info("The user has been prompted to enter their email")
 
             if user_email != '':
                 state.user_account = app_utils.get_user(user_email)
@@ -206,6 +235,7 @@ def main():
                         user_name = st.text_input(label = "Name:")
                     with two_columns[1]:
                         user_lab = st.text_input(label = "Lab:")
+                    logging.info("User has been prompted to create a new profile")
 
                     two_columns = st.columns(2)
                     with two_columns[0]:
@@ -220,6 +250,7 @@ def main():
                                     '1000+'],
                                     index=None)
                         user_experience = get_user_experience(user_num_labels, user_domain)
+                    logging.info("User has been asked about their experience level")
 
                     new_user = {
                         'email': user_email,
@@ -227,8 +258,10 @@ def main():
                         'experience': user_experience,
                         'lab': user_lab
                     }
+                    logging.info("New user information stored")
 
                     user_confirm = st.button(label="Submit", key="user_button")
+                    logging.info("New user information submitted")
 
                     # Create a new user once submitted
                     if user_confirm:
@@ -237,6 +270,7 @@ def main():
                         app_utils.get_user.clear()
                         state.user_account = app_utils.get_user(user_email)
                         st.rerun()
+                        logging.info("New user confirmed and added to the database")
 
                 # Display User information if they exist in Database
                 elif state.user_account is not None:
@@ -271,12 +305,15 @@ def main():
                 if not db_connected:
                     st.error("""Please ensure database configuration information is correct
                     and update on the Settings page.""")
+                    logging.info("Database connection error")
                 else:
+                    logging.info("Connected to the database")
                     app_utils.get_models.clear()
                     app_utils.get_user.clear()
                     app_utils.get_dissimilarities.clear()
                     st.rerun()
         else:
+            logging.info("Models retrieved")
             two_columns = st.columns(3)
             with two_columns[0]:
 
@@ -287,23 +324,27 @@ def main():
                 for i in range(1,len(models)):
                     model_names.append(models[i]['m_id'])
                     model_dic[models[i]['m_id']] = models[i]['model_name']
+                logging.info("Models appended to dictionary and list")
 
                 # Prompt user to select their model of interest
                 st.session_state.session_model = st.selectbox(label='Select the model you wish to validate:',
                                             options=tuple(model_names),
                                             format_func=model_dic.__getitem__,
                                             index=None)
+                logging.info("Model selectbox created")
 
             with two_columns[1]:
 
                 # Retrieve the dissimilarity metrics from SQL database
                 dissimilarities = app_utils.get_dissimilarities()
+                logging.info("Dissimilarities retrieved")
                 diss_dic = {}
                 diss_names = []
 
                 for j in range(1, len(dissimilarities)):
                     diss_names.append(dissimilarities[j]['d_id'])
                     diss_dic[dissimilarities[j]['d_id']] = dissimilarities[j]['name']
+                logging.info("Dissimilarities appended to dictionary and list")
 
                 # Prompt user to select the metric of interest
                 state.session_dissim = st.selectbox(label='What selection method would you like to use?',
@@ -322,6 +363,7 @@ def main():
                         a single data point to the decision boundary. Images located close to
                         the decision boundary will be displayed.
                         """)
+                logging.info(f"Dissimilarity selectbox created")
 
             with two_columns[2]:
                 state.session_number = st.number_input(label='What is the preferred image batch size?',
@@ -329,6 +371,7 @@ def main():
                                         max_value=200,
                                         value=10,
                                         step=5)
+                logging.info(f"Batch size: {state.session_number} images")
             # Hide Advanced Specifications with an expander
             # with st.expander("Advanced Specifications"):
             two_columns = st.columns([2,1])
@@ -355,6 +398,7 @@ def main():
                         Moving the slider toward *Evaluation* will result in a more
                         randomized selection of images while moving the slider toward 
                         *Retraining* will ensure images with less certain labels are selected.""")
+                logging.info("Session purpose slider created")
 
             # Ensure non-Advanced Specification prompts have been answered before retrieving
             # the images with those specifications
@@ -367,35 +411,49 @@ def main():
                                                     batch_size=state.session_number,
                                                     random_ratio=state.session_purpose)
                 # st.toast("Retrieved Images!")
-                logging.info("Retrieved images")
+                logging.info("""Retrieved labels of interest from the database based on model, dissimilarity value, 
+                             batch size, and purpose""")
 
     st.divider()
 
     st.markdown("""<h3 style='text-align: left; color: black;'>
                 Image Validation</h3>""",
                 unsafe_allow_html=True)
+    logging.info("Initializing image validation section")
 
     if 'new_df' not in state:
         state.new_df = pd.DataFrame(columns=['i_id', 'u_id', 'weight', 'label'])
+        logging.info("New state dataframe created to store image, user, and label information")
     # Create a form of images to be labeled if there are labels that meet the user specs
+
+    # initializing the test counter
+    if 'test_counter' not in state:
+        state.test_counter = 0
+
     if state.label_df is not None:
         if not state.label_df.empty:
             with st.form('image_validation_form', clear_on_submit=True):
+                logging.info("New form created - the image validation form")
                 # for count in range(0, len(label_df)):
-
-                st.progress(state.counter/(state.session_number-1),
+                logging.info(f"State.counter: {state.counter}")
+                st.progress(state.counter/(state.session_number -1),  
                             text=f"{len(state.new_df)}/{state.session_number} labeled")
+                logging.info("Progress bar created")
                 # Create unique keys for form widgets
                 widget_selectbox = 'plankton_select_' + str(state.counter)
                 widget_checkbox = 'plankton_check_' + str(state.counter)
 
                 if state.counter in state.new_df.index:
                     is_checked = True
+                    logging.info("state.counter is checked")
                 else:
                     is_checked = False
+                    logging.info("state.conter is not checked")
 
                 # Show relevant label info
                 display_label_info(state.label_df, state.counter)
+                logging.info("label info displayed: state.label_df and state.counter")
+                logging.info(f"What are these values? state.label_df: {state.label_df}, state.counter: {state.counter}")
 
                 label_probs_options = get_label_prob_options(
                     state.label_df, state.counter)
@@ -405,11 +463,13 @@ def main():
                     label="Select the correct phytoplankton subcategory:",
                     key=widget_selectbox,
                     options = label_probs_options)
+                logging.info(f"Selectbox created for user to select label. Current label: {user_label}")
 
                 # Add validated label to a DataFrame
                 user_add = st.checkbox(label='Confirm label',
                                     key=widget_checkbox,
                                     value=is_checked)
+                logging.info(f"Checkbox created. Value: {user_add}")
                 if is_checked is True:
                     logging.info('Checkbox is selected')
 
@@ -421,39 +481,56 @@ def main():
                                         state.user_account['u_id'],
                                         state.user_account['experience'],
                                         user_label]
+                    logging.info("Dataframe to store validated information has been created")
                 st.divider()
 
                 # Use Submit button to insert label information to SQL Database
-                back_col, next_col =  st.columns(2)
-                next_disabled = (state.counter==state.session_number-1) or (
-                    state.user_account is None)
-                back_disabled = (state.counter == 0) or (state.user_account is None)
+                back_col, next_col = st.columns(2)
+                next_disabled = (state.user_account is None)
+                if next_disabled:
+                    logging.info("Next button disabled")
+                back_disabled = (state.user_account is None)
+                if back_disabled:
+                    logging.info("Back button disabled")
                 next_tip = None
                 back_tip = None
+                if state.counter == 0:
+                    back_tip = "Try Next"
+                if state.counter == state.session_number - 1:
+                    next_tip = "Try Back or Submit"
                 if state.user_account is None:
                     next_tip = "Enter valid user information"
                 if state.user_account is None:
                     back_tip = "Enter valid user information"
 
                 with back_col:
-                    st.form_submit_button("Back", disabled=back_disabled, on_click=update_counter,
-                                            args=(False,user_label),
-                                            help=back_tip, use_container_width=True)
+                    back_button = st.form_submit_button("Back", disabled=back_disabled, 
+                                                        on_click=update_counter,
+                                                        args=(False, user_label),
+                                                        help=back_tip, use_container_width=True,
+                                                        type='secondary')
+                    logging.info(f"Back button created. Value: {back_button}")
                 with next_col:
-                    st.form_submit_button("Next", disabled=next_disabled, on_click=update_counter,
-                                            args=(True,user_label),
-                                            help=next_tip,use_container_width=True)
+                    next_button = st.form_submit_button("Next", #disabled=next_disabled, 
+                                                        on_click=update_counter,
+                                                        args=(True, user_label),
+                                                        help=next_tip,use_container_width=True,
+                                                        type='secondary')
+                    logging.info(f"Next button created. Value: {next_button}")
 
                 submit_disabled = state.user_account is None
+                if submit_disabled:
+                    logging.info("Submit button disabled")
                 submit_tip = None
                 # if (len(st.session_state.new_df) <= 0) and not user_add:
                 #     submit_tip = "No labels to submit"
                 if state.user_account is None:
                     submit_tip = "Enter valid user information"
 
-                submitted = st.form_submit_button("Submit",type='primary', use_container_width=True,
+                submitted = st.form_submit_button("Submit", type='primary', use_container_width=True,
                                                     disabled=submit_disabled, help=submit_tip,
-                                                    on_click=submit_labels, args=(user_label))
+                                                    on_click=submit_labels, args=(user_label,))
+                logging.info(f"Submit button created. Value: {submitted}")
 
                 if submitted and state.user_account:
                     if len(state.new_df) > 0:
@@ -466,11 +543,15 @@ def main():
                                                     batch_size=state.session_number,
                                                     random_ratio=state.session_purpose)
                         state.new_df = pd.DataFrame(columns=['i_id', 'u_id', 'weight', 'label'])
+                        logging.info("Labels have been recorded in the database!")
 
                         st.rerun()
                 elif submitted and not state.user_account:
                     st.markdown("""<h5 style='text-align: left; color: black;'>
                     Please resubmit once your user information has been recorded.</h5>""",
                     unsafe_allow_html=True)
+                    logging.info("No user information so cannot submit labels")
     else:
         st.error("""No images match the specification.""")
+        logging.info("Error: no images match the specification")
+    logging.info("End of main()")
