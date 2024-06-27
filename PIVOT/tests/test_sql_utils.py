@@ -16,6 +16,10 @@ import pandas as pd
 import warnings 
 from collections.abc import Iterable
 
+from utils import load_config
+
+config_dict = load_config()
+image_container = str(config_dict['image_container'])
 
 
 
@@ -70,7 +74,7 @@ class TestImagesToPredict(unittest.TestCase):
 
         mock_stored_procedure.return_value = df
         model_id = 1
-        su.get_images_to_predict(model_id=model_id)
+        su.get_images_to_predict(model_id=model_id, container=image_container) 
 
         mock_stored_procedure.assert_called_once_with(sp="GENERATE_IMAGES_TO_PREDICT",
                                                       args=OrderedDict([("MODEL_ID", model_id)]),

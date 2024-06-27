@@ -4,10 +4,12 @@ Description: This stored procedure selects images from the IMAGES table
              that have not been previously predicted by the specified model.
 Parameters:
 - @MODEL_ID: Integer denoting Model ID for subsequent predictions
+- @CONTAINER: String indicating the container in use
 */
 
 CREATE OR ALTER PROCEDURE GENERATE_IMAGES_TO_PREDICT
     @MODEL_ID INT
+    @CONTAINER VARCHAR(255)
 AS
 BEGIN
     WITH EXISTING_IMAGES AS (

@@ -12,10 +12,13 @@ import pandas as pd
 
 from utils import app_utils
 from utils import sql_utils
+from utils import load_config
 
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.DEBUG)
+config_dict = load_config()
+image_container = str(config_dict['image_container'])
 
 def update_counter(increment, user_label):
     """
@@ -406,10 +409,12 @@ def main():
             valid_dissim = state.session_dissim is not None
             valid_session_number = state.session_number is not None
             if valid_models and valid_dissim and valid_session_number:
-                state.label_df = sql_utils.get_label_rank_df(model_id=state.session_model,
+                state.label_df = sql_utils.get_label_rank_df(container=image_container,
+                                                    model_id=state.session_model,
                                                     dissimilarity_id=state.session_dissim,
                                                     batch_size=state.session_number,
-                                                    random_ratio=state.session_purpose)
+                                                    random_ratio=state.session_purpose,
+                                                    )
                 # st.toast("Retrieved Images!")
                 logging.info("""Retrieved labels of interest from the database based on model, dissimilarity value, 
                              batch size, and purpose""")
