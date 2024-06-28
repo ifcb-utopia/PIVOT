@@ -9,6 +9,7 @@ Functions:
 """
 import streamlit as st
 import pandas as pd
+import numpy as np
 
 from utils import app_utils
 from utils import sql_utils
@@ -16,9 +17,9 @@ from utils import load_config
 
 import logging
 
-#logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
+
 config_dict = load_config()
-image_container = str(config_dict['image_container'])
 
 def update_counter(increment, user_label):
     """
@@ -208,6 +209,44 @@ def main():
     logging.info("Running main()")
     state = st.session_state
     logging.info(f"State: {state}")
+    with st.expander("Dataset Selection", expanded=True):
+        state.container = None
+
+        # Retrieve and display the list of datasets
+        dataset_df = sql_utils.run_sql_query("SELECT * FROM dbo.datasets")
+        logging.info(dataset_df)
+        friendly_names = dataset_df['selectbox_name']
+        state.container = st.selectbox(label='Choose your dataset:',
+                                       options=tuple(friendly_names),
+                                       index=None)
+        logging.info("Dataset selectbox created")
+
+        if state.container is not None:
+            dataset_df_row = dataset_df[dataset_df['selectbox_name'] == state.container]
+            image_container = str(np.array(dataset_df_row['container'].values)[0])
+            
+            logging.info(image_container)
+            logging.info(type(image_container))
+
+            with open("config/config.yaml", "w", encoding="utf-8") as file:
+                file.write("connection_string: " + config_dict['connection_string'] + "\n")
+                file.write("image_container: " + image_container + "\n")
+                file.write("server: " + config_dict['server'] + "\n")
+                file.write("database: " + config_dict['database'] + "\n")
+                file.write("db_user: " + config_dict['db_user'] + "\n")
+                file.write("db_password: " + config_dict['db_password'] + "\n")
+                file.write("subscription_id: " + config_dict['subscription_id'] + "\n")
+                file.write("resource_group: " + config_dict['resource_group'] + "\n")
+                file.write("workspace_name: " + config_dict['workspace_name'] + "\n")
+                file.write("experiment_name: " + config_dict['experiment_name'] + "\n")
+                file.write("api_key: " + config_dict['api_key'] + "\n")
+                file.write("model_name: " + config_dict['model_name'] + "\n")
+                file.write("endpoint_name: " + config_dict['endpoint_name'] + "\n")
+                file.write("deployment_name: " + config_dict['deployment_name'] + "\n")
+        elif state.container is None:
+            image_container = None
+            st.warning("Dataset has not been selected")
+
     with st.expander("Session Details", expanded=True):
         st.markdown("""<h3 style='text-align: left; color: black;'>
                 User Information</h3>""",
