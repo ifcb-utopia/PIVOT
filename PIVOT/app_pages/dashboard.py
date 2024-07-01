@@ -8,12 +8,16 @@ import streamlit as st
 from app_pages.tabs import train_summary
 from app_pages.tabs import test_summary
 
+import logging
+
 def main():
     """
     Executes the Streamlit formatted HTML displayed on the Dashboard subpage and
     displays summary statistics and graphs for the trained model and test model.
     Users can select from the different test models stored on the SQL Database.
     """
+    logging.info("Loading metrics dashboard")
+
     st.markdown("""
             <h1 style='text-align: center; color: white; background-image: url(https://img.freepik.com/premium-photo/cute-colorful-abstract-background_480962-11756.jpg);
             padding-top: 70px''>

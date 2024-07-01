@@ -214,7 +214,7 @@ def main():
 
         # Retrieve and display the list of datasets
         dataset_df = sql_utils.run_sql_query("SELECT * FROM dbo.datasets")
-        logging.info(dataset_df)
+        logging.info("Dataset table has been called")
         friendly_names = dataset_df['selectbox_name']
         state.container = st.selectbox(label='Choose your dataset:',
                                        options=tuple(friendly_names),
@@ -225,7 +225,7 @@ def main():
             dataset_df_row = dataset_df[dataset_df['selectbox_name'] == state.container]
             image_container = str(np.array(dataset_df_row['container'].values)[0])
             
-            logging.info(image_container)
+            logging.info("Dataset selected:", image_container)
             logging.info(type(image_container))
 
             with open("config/config.yaml", "w", encoding="utf-8") as file:
@@ -243,6 +243,8 @@ def main():
                 file.write("model_name: " + config_dict['model_name'] + "\n")
                 file.write("endpoint_name: " + config_dict['endpoint_name'] + "\n")
                 file.write("deployment_name: " + config_dict['deployment_name'] + "\n")
+            
+            logging.info("Config file updated")
         elif state.container is None:
             image_container = None
             st.warning("Dataset has not been selected")
@@ -582,7 +584,7 @@ def main():
                         app_utils.insert_label(state.new_df)
                         state.counter = 0
                         sql_utils.get_label_rank_df.clear()
-                        state.label_df = sql_utils.get_label_rank_df(model_id=state.session_model,
+                        state.label_df = sql_utils.get_label_rank_df(container=image_container, model_id=state.session_model,
                                                     dissimilarity_id=state.session_dissim,
                                                     batch_size=state.session_number,
                                                     random_ratio=state.session_purpose)
