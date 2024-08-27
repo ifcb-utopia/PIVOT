@@ -83,7 +83,7 @@ def main():
                                         "Eugleno",
                                         "Other",
                                         "Prymnesio",
-                                        "Unidentifiable"]
+                                        "Null"]
 
                     # Load the train model summary data to compare
                     model_preds = pd.read_csv('data/model-summary-cnn-v1-b3.csv')

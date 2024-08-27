@@ -42,6 +42,8 @@ from tqdm.auto import tqdm
 from utils.sql_constants import SP_ARGS_TYPE_MAPPING, SP_FILE_NAMES, RELABEL_LAMBDA
 from utils import load_config
 
+import logging
+
 
 def get_images_to_metrize(model_id: int, dissimilarity_id: int,
                           server_args: Optional[Dict[str, str]] = {}) -> pd.DataFrame:
@@ -71,12 +73,14 @@ def get_images_to_metrize(model_id: int, dissimilarity_id: int,
     return df
 
 
-def get_images_to_predict(model_id: int,
+def get_images_to_predict(container: str,
+                          model_id: int,
                           server_args: Optional[Dict[str, str]] = {}) -> pd.DataFrame:
     """
     Get all new images that need model predictions for a given model_id.
 
     Parameters:
+        container (str): Indicates which container is in use.
         model_id (int): The identifier of a specific model to predict with.
         server_args (dict, optional): A dictionary containing connection parameters for the server.
             Expected keys: 'server', 'database', 'username', 'password'.
@@ -186,7 +190,8 @@ def get_test_set_df(model_id: int,
     return df
 
 @st.cache_data(show_spinner="Retrieving new batch")
-def get_label_rank_df(model_id: int, #pylint: disable=too-many-arguments
+def get_label_rank_df(container: str,
+                      model_id: int, #pylint: disable=too-many-arguments
                       dissimilarity_id: int,
                       batch_size: int = 100,
                       random_ratio: float = 0.5,
@@ -208,11 +213,14 @@ def get_label_rank_df(model_id: int, #pylint: disable=too-many-arguments
             Columns: IMAGE_ID, BLOB_FILEPATH, UNCERTAINTY, PRED_LABEL, PROBS, RANK_SCORE
     """
     # Check basic arguments:
+    logging.info("running get_label_rank_df")
     args = OrderedDict([
         ("MODEL_ID", model_id),
         ("D_METRIC_ID", dissimilarity_id),
-        ("BATCH_SIZE", batch_size)
+        ("BATCH_SIZE", batch_size),
+        ("CONTAINER", container)
     ])
+    logging.info(args)
     # check types
     validate_args("AL_RANKINGS", args)
     # check fixed ranges
@@ -225,6 +233,12 @@ def get_label_rank_df(model_id: int, #pylint: disable=too-many-arguments
     batch_size_r = int(random_ratio * batch_size)
     batch_size_d = batch_size - batch_size_r
 
+    logging.info('random_ratio:', random_ratio)
+    logging.info('batch_size_r:', batch_size_r)
+    logging.info('batch_size_d:', batch_size_d)
+    logging.info('container:', container)
+
+    logging.info("executing stored procedure")
     # Call stored procedure for label ranking with dissimilarity scores
     if batch_size_d > 0:
         args["BATCH_SIZE"] = batch_size_d
@@ -251,7 +265,7 @@ def get_label_rank_df(model_id: int, #pylint: disable=too-many-arguments
 
     # Concatenate the results into a single DataFrame (may have duplicates)
     full_df = pd.concat([d_df, r_df])
-
+    logging.info(full_df.shape)
     # Convert PROBS from strings to dict with full-form class_labels
     full_df['PROBS'] = map_probs_column(model_id=model_id, prob_col=full_df['PROBS'])
 

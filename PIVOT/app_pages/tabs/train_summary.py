@@ -23,9 +23,9 @@ def main():
                     "Dictyo",
                     "Dinoflagellate",
                     "Eugleno",
-                    "Unidentifiable",
+                    "Other",
                     "Prymnesio",
-                    "Other"]
+                    "Null"]
 
     # Read in CNN output as a Pandas DataFrame and calculate summary metrics
     model_pred = pd.read_csv('data/model-summary-cnn-v1-b3.csv')
@@ -45,8 +45,8 @@ def main():
                  over graphs to zoom, and download graphs as PNGs by hovering over graphs
                  and selecting the camera icon.""")
 
-        # Replace the high group "null" to "Unidentifiable"
-        model_pred['high_group'] = model_pred['high_group'].fillna('Unidentifiable')
+        # Replace the high group "null" to "Null"
+        model_pred['high_group'] = model_pred['high_group'].fillna('Null')
         group_count = model_pred.groupby('high_group')['true_label'] \
                                 .count().sort_values(ascending=True)
         
