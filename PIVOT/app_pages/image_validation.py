@@ -450,6 +450,7 @@ def main():
             valid_dissim = state.session_dissim is not None
             valid_session_number = state.session_number is not None
             if valid_models and valid_dissim and valid_session_number:
+                logging.info("Gathering image dataframe")
                 state.label_df = sql_utils.get_label_rank_df(container=image_container,
                                                     model_id=state.session_model,
                                                     dissimilarity_id=state.session_dissim,
@@ -480,90 +481,90 @@ def main():
         if not state.label_df.empty:
             with st.form('image_validation_form', clear_on_submit=True):
                 logging.info("New form created - the image validation form")
-                # for count in range(0, len(label_df)):
-                logging.info(f"State.counter: {state.counter}")
-                st.progress(state.counter/(state.session_number -1),  
-                            text=f"{len(state.new_df)}/{state.session_number} labeled")
-                logging.info("Progress bar created")
-                # Create unique keys for form widgets
-                widget_selectbox = 'plankton_select_' + str(state.counter)
-                widget_checkbox = 'plankton_check_' + str(state.counter)
+                for count in range(0, len(state.label_df)):
+                    # logging.info(f"State.counter: {state.counter}")
+                # st.progress(state.counter/(state.session_number -1),  
+                            # text=f"{len(state.new_df)}/{state.session_number} labeled")
+                # logging.info("Progress bar created")
+                    # Create unique keys for form widgets
+                    widget_selectbox = 'plankton_select_' + str(count)
+                    widget_checkbox = 'plankton_check_' + str(count)
 
-                if state.counter in state.new_df.index:
-                    is_checked = True
-                    logging.info("state.counter is checked")
-                else:
-                    is_checked = False
-                    logging.info("state.conter is not checked")
+                    if count in state.new_df.index:
+                        is_checked = True
+                        logging.info(f"image at location {count} is checked")
+                    else:
+                        is_checked = False
+                        logging.info(f"image at location {count} is not checked")
 
                 # Show relevant label info
-                display_label_info(state.label_df, state.counter)
-                logging.info("label info displayed: state.label_df and state.counter")
-                logging.info(f"What are these values? state.label_df: {state.label_df}, state.counter: {state.counter}")
+                    display_label_info(state.label_df, count)
+                    logging.info("label info displayed: state.label_df and count")
+                    logging.info(f"What are these values? state.label_df: {state.label_df}, count: {count}")
 
-                label_probs_options = get_label_prob_options(
-                    state.label_df, state.counter)
+                    label_probs_options = get_label_prob_options(
+                        state.label_df, count)
 
-                # Prompt user to label image
-                user_label = st.selectbox(
-                    label="Select the correct phytoplankton subcategory:",
-                    key=widget_selectbox,
-                    options = label_probs_options)
-                logging.info(f"Selectbox created for user to select label. Current label: {user_label}")
+                    # Prompt user to label image
+                    user_label = st.selectbox(
+                        label="Select the correct phytoplankton subcategory:",
+                        key=widget_selectbox,
+                        options = label_probs_options)
+                    logging.info(f"Selectbox created for user to select label. Current label: {user_label}")
 
-                # Add validated label to a DataFrame
-                user_add = st.checkbox(label='Confirm label',
-                                    key=widget_checkbox,
-                                    value=is_checked)
-                logging.info(f"Checkbox created. Value: {user_add}")
-                if is_checked is True:
-                    logging.info('Checkbox is selected')
+                    # Add validated label to a DataFrame
+                    user_add = st.checkbox(label='Confirm label',
+                                           key=widget_checkbox,
+                                           value=is_checked)
+                    logging.info(f"Checkbox created. Value: {user_add}")
+                    if is_checked is True:
+                        logging.info('Checkbox is selected')
 
-                if user_add and not state.user_account:
-                    st.error("Please submit your user information!")
-                elif user_add and state.user_account:
-                    state.new_df.loc[state.counter] = [
-                                        state.label_df.iloc[state.counter]['IMAGE_ID'],
-                                        state.user_account['u_id'],
-                                        state.user_account['experience'],
-                                        user_label]
-                    logging.info("Dataframe to store validated information has been created")
-                st.divider()
-
-                # Use Submit button to insert label information to SQL Database
-                back_col, next_col = st.columns(2)
-                next_disabled = (state.user_account is None)
-                if next_disabled:
-                    logging.info("Next button disabled")
-                back_disabled = (state.user_account is None)
-                if back_disabled:
-                    logging.info("Back button disabled")
-                next_tip = None
-                back_tip = None
-                if state.counter == 0:
-                    back_tip = "Try Next"
-                if state.counter == state.session_number - 1:
-                    next_tip = "Try Back or Submit"
-                if state.user_account is None:
-                    next_tip = "Enter valid user information"
-                if state.user_account is None:
-                    back_tip = "Enter valid user information"
-
-                with back_col:
-                    back_button = st.form_submit_button("Back", disabled=back_disabled, 
-                                                        on_click=update_counter,
-                                                        args=(False, user_label),
-                                                        help=back_tip, use_container_width=True,
-                                                        type='secondary')
-                    logging.info(f"Back button created. Value: {back_button}")
-                with next_col:
-                    next_button = st.form_submit_button("Next", #disabled=next_disabled, 
-                                                        on_click=update_counter,
-                                                        args=(True, user_label),
-                                                        help=next_tip,use_container_width=True,
-                                                        type='secondary')
-                    logging.info(f"Next button created. Value: {next_button}")
-
+                    if user_add and not state.user_account:
+                        st.error("Please submit your user information!")
+                    elif user_add and state.user_account:
+                        state.new_df.loc[count] = [
+                                            state.label_df.iloc[count]['IMAGE_ID'],
+                                            state.user_account['u_id'],
+                                            state.user_account['experience'],
+                                            user_label]
+                        logging.info("Dataframe to store validated information has been created")
+                #     st.divider()
+# 
+                # # Use Submit button to insert label information to SQL Database
+                # back_col, next_col = st.columns(2)
+                # next_disabled = (state.user_account is None)
+                # if next_disabled:
+                #     logging.info("Next button disabled")
+                # back_disabled = (state.user_account is None)
+                # if back_disabled:
+                #     logging.info("Back button disabled")
+                # next_tip = None
+                # back_tip = None
+                # if state.counter == 0:
+                #     back_tip = "Try Next"
+                # if state.counter == state.session_number - 1:
+                #     next_tip = "Try Back or Submit"
+                # if state.user_account is None:
+                #     next_tip = "Enter valid user information"
+                # if state.user_account is None:
+                #     back_tip = "Enter valid user information"
+# 
+                # with back_col:
+                #     back_button = st.form_submit_button("Back", disabled=back_disabled, 
+                #                                         on_click=update_counter,
+                #                                         args=(False, user_label),
+                #                                         help=back_tip, use_container_width=True,
+                #                                         type='secondary')
+                #     logging.info(f"Back button created. Value: {back_button}")
+                # with next_col:
+                #     next_button = st.form_submit_button("Next", #disabled=next_disabled, 
+                #                                         on_click=update_counter,
+                #                                         args=(True, user_label),
+                #                                         help=next_tip,use_container_width=True,
+                #                                         type='secondary')
+                #     logging.info(f"Next button created. Value: {next_button}")
+# 
                 submit_disabled = state.user_account is None
                 if submit_disabled:
                     logging.info("Submit button disabled")
