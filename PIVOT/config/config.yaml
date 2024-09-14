@@ -1,5 +1,5 @@
 connection_string: DefaultEndpointsProtocol=https;AccountName=ifcbwestus;AccountKey=bHLeaeVSCT4DK7nwzof/lTmKctp6+ljI9e95efaZTM8klc6MwMseApKN9qRT8GXFxwLnroDtvXGE+ASt14eASA==;EndpointSuffix=core.windows.net
-image_container: naames
+image_container: exportsnp
 server: ifcbserver.database.windows.net
 database: ifcbsql
 db_user: ifcbadmin

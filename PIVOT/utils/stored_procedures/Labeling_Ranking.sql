@@ -5,14 +5,14 @@ Parameters:
 - @MODEL_ID: Integer denoting Model ID for filtering predictions.
 - @D_METRIC_ID: Integer denoting AL metric ID.
 - @BATCH_SIZE: Integer denoting number of top-ranked images to retrieve.
-- @CONTAINER: Indicates which container is active
+- @CONTAINER: String denoting container name for filtering images.
 */
 
 CREATE OR ALTER PROCEDURE AL_RANKINGS
     @MODEL_ID INT,
     @D_METRIC_ID INT,
     @BATCH_SIZE INT,
-    @CONTAINER
+	@CONTAINER VARCHAR(255)
 AS
 BEGIN
     SELECT TOP (@BATCH_SIZE)
@@ -30,6 +30,6 @@ BEGIN
     WHERE
           P.M_ID = @MODEL_ID
       AND M.D_ID = @D_METRIC_ID
-      AND I.CONTAINER = @CONTAINER
+	  AND I.CONTAINER = @CONTAINER
     ORDER BY RANK_SCORE DESC;
 END;

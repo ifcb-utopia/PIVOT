@@ -14,8 +14,10 @@ import numpy as np
 from utils import app_utils
 from utils import sql_utils
 from utils import load_config
+from utils import CONFIG_LABEL_DICT as label_dict
 
 import logging
+import ast
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -122,7 +124,7 @@ def get_user_experience(num_labels, domain):
     logging.info(f"Experience level is {exp_level}, end of get_user_experience()")
     return exp_level
 
-def get_label_prob_options(label_df, count):
+def get_label_prob_options(label_df, count, dissimilarity_id):
     """
     Converts the probabilities of each category into a list and sorts them to
     be displayed in descending order.
@@ -130,15 +132,19 @@ def get_label_prob_options(label_df, count):
     Args:
         - label_df (DataFrame): A Pandas DataFrame containing images to be labeled
         - count (int): Counter for the position within the DataFrame
+        - dissimilarity_id (int): ID of dissimilarity choice
 
     Returns:
-        - exp_level (int): The level of experience ranging from 1 to 5.
+        - label_probs_options (list): The ordered list to display the images in.
     """
     logging.info("Sorting probabilities with get_label_prob_options()")
     # Convert dictionary of probabilities to a DataFrame
-    label_probs = label_df.iloc[count]['PROBS']
+    if dissimilarity_id == 2:
+        label_probs = ast.literal_eval(label_df.iloc[count]['PROBS'])
+        label_probs = dict(zip(label_dict.keys(), label_probs.values()))
+    else:
+        label_probs = label_df.iloc[count]['PROBS']
     label_probs = pd.DataFrame.from_dict(label_probs, orient='index')
-
     # Rename the column title to PROBS
     column_name = label_probs.columns[0]
     label_probs = label_probs.rename(columns={column_name: "PROBS"})
@@ -502,8 +508,7 @@ def main():
                     logging.info("label info displayed: state.label_df and count")
                     logging.info(f"What are these values? state.label_df: {state.label_df}, count: {count}")
 
-                    label_probs_options = get_label_prob_options(
-                        state.label_df, count)
+                    label_probs_options = get_label_prob_options(state.label_df, count, state.session_dissim)
 
                     # Prompt user to label image
                     user_label = st.selectbox(

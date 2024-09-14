@@ -31,6 +31,18 @@ CONFIG_ARGS = [
     'deployment_name'
 ]
 
+CONFIG_LABEL_DICT = {'Chloro': 0,
+                     'Cilliate': 1,
+                     'Crypto': 2,
+                     'Diatom': 3,
+                     'Dictyo': 4,
+                     'Dinoflagellate': 5,
+                     'Eugleno': 6,
+                     'Other': 7,
+                     'Prymnesio': 8,
+                     'Null': 9
+                    }
+
 def load_config(file_path=None, interval=10):
     """
     Load config file from the file path. This allows us to change the

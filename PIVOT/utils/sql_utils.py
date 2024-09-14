@@ -229,45 +229,68 @@ def get_label_rank_df(container: str,
     if (random_ratio < 0) or (random_ratio > 1):
         raise ValueError("The random_ratio must be a positive float between 0 & 1.")
 
-    # Calculate the number of random and dissimilarity images based on the ratio
-    batch_size_r = int(random_ratio * batch_size)
-    batch_size_d = batch_size - batch_size_r
+    if args["D_METRIC_ID"] == 0 or args['D_METRIC_ID'] == 1:
+        # Calculate the number of random and dissimilarity images based on the ratio
+        batch_size_r = int(random_ratio * batch_size)
+        batch_size_d = batch_size - batch_size_r
 
-    logging.info('random_ratio:', random_ratio)
-    logging.info('batch_size_r:', batch_size_r)
-    logging.info('batch_size_d:', batch_size_d)
-    logging.info('container:', container)
+        logging.info('random_ratio:', random_ratio)
+        logging.info('batch_size_r:', batch_size_r)
+        logging.info('batch_size_d:', batch_size_d)
+        logging.info('container:', container)
 
-    logging.info("executing stored procedure")
-    # Call stored procedure for label ranking with dissimilarity scores
-    if batch_size_d > 0:
-        args["BATCH_SIZE"] = batch_size_d
-        d_df = execute_stored_procedure(sp="AL_RANKINGS", args=args, server_args=server_args)
-    else:
-        d_df = None
-    # Call stored procedure for label ranking with D_ID = 0 (represents random images)
-    if batch_size_r > 0:
-        args['D_METRIC_ID'] = 0
-        args['BATCH_SIZE'] = batch_size_r
-        r_df = execute_stored_procedure(sp="AL_RANKINGS", args=args, server_args=server_args)
-    else:
-        r_df = None
-    # Check that both d_df and r_df are not None:
-    if d_df is None:
+        logging.info("executing stored procedure")
+        # Call stored procedure for label ranking with dissimilarity scores
+        if batch_size_d > 0:
+            args["BATCH_SIZE"] = batch_size_d
+            d_df = execute_stored_procedure(sp="AL_RANKINGS", args=args, server_args=server_args)
+        else:
+            d_df = None
+        # Call stored procedure for label ranking with D_ID = 0 (represents random images)
+        if batch_size_r > 0:
+            args['D_METRIC_ID'] = 0
+            args['BATCH_SIZE'] = batch_size_r
+            r_df = execute_stored_procedure(sp="AL_RANKINGS", args=args, server_args=server_args)
+        else:
+            r_df = None
+        # Check that both d_df and r_df are not None:
+        if d_df is None:
+            if r_df is None:
+                warnings.warn("There are no label ranking results available!", stacklevel=2)
+            # if batch_size is 0, then we expect to return 1 of the dfs
+            if batch_size_d != 0:
+                warnings.warn("Unexpectedly, there are no results for the uncertainty samples.", stacklevel=2)
         if r_df is None:
-            warnings.warn("There are no label ranking results available!", stacklevel=2)
-        # if batch_size is 0, then we expect to return 1 of the dfs
-        if batch_size_d != 0:
-            warnings.warn("Unexpectedly, there are no results for the uncertainty samples.", stacklevel=2)
-    if r_df is None:
-        if batch_size_r != 0:
-            warnings.warn("Unexpectedly, there are no results for the random samples.", stacklevel=2)
+            if batch_size_r != 0:
+                warnings.warn("Unexpectedly, there are no results for the random samples.", stacklevel=2)
 
-    # Concatenate the results into a single DataFrame (may have duplicates)
-    full_df = pd.concat([d_df, r_df])
-    logging.info(full_df.shape)
-    # Convert PROBS from strings to dict with full-form class_labels
-    full_df['PROBS'] = map_probs_column(model_id=model_id, prob_col=full_df['PROBS'])
+        # Concatenate the results into a single DataFrame (may have duplicates)
+        full_df = pd.concat([d_df, r_df])
+        logging.info(full_df.shape)
+        # Convert PROBS from strings to dict with full-form class_labels
+        full_df['PROBS'] = map_probs_column(model_id=model_id, prob_col=full_df['PROBS'])
+    elif args['D_METRIC_ID'] == 2:
+        metrics_df = execute_stored_procedure(sp="METRICS_SELECTION", 
+                                              args=OrderedDict([("MODEL_ID", model_id), 
+                                              ("D_METRIC_ID", dissimilarity_id),
+                                              ("CONTAINER", container)]),
+                                              server_args=server_args)
+        diatom_df = pd.DataFrame(data=metrics_df[metrics_df['D_VALUE'] >= 0.58])  # diatom threshold value
+        all_i_ids = diatom_df['I_ID'].sample(frac=1)
+        batch_i_ids = pd.DataFrame(data={'i_id':all_i_ids.iloc[:args['BATCH_SIZE']]})
+
+        query_list = []
+
+        query_list.append("DECLARE @I_ID_LIST IDList;")
+        for item in batch_i_ids['i_id']:
+            query_list.append(f"INSERT INTO @I_ID_LIST (Value) VALUES ({item})")
+
+        query_list.append(f"""EXECUTE VALIDATION_SET @I_ID_LIST = @I_ID_LIST, 
+                          @CONTAINER = {container}, @MODEL_ID = {model_id}, 
+                          @DISS_ID = {dissimilarity_id};""")
+
+        query_string = ' '.join(query_list)
+        full_df = run_sql_query(query_string)
 
     return full_df
 
