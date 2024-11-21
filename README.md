@@ -151,7 +151,7 @@ Here is an overview of our project structure:
 
 This repository can be cloned locally by running the following `git` command:
 ```bash
-git clone https://github.com/chandlerault/PIVOT.git
+git clone https://github.com/ifcb-utopia/PIVOT.git
 ```
 Please note that Git is required to run the above command. For instructions on downloading Git, please see [the GitHub guide](https://github.com/git-guides/install-git).
 
@@ -174,6 +174,8 @@ conda deactivate
 ```
 
 Please note that Conda must be installed for the above commands to work. For instructions on installing Conda, please visit [Conda.io](https://conda.io/projects/conda/en/latest/user-guide/install/index.html).
+
+More detailed instructions on how to install and run PIVOT can be found on the documentation [website](https://ifcb-utopia.github.io/repositories/pivot.html).
 
 <a id="data"></a>
 ## Data
